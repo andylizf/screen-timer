@@ -28,6 +28,7 @@ class AgentConfig:
     log_path: Path = Path("logs/screen-timer.log")
     workday_cutoff: time = time(17, 0)
     violation_grace_seconds: int = 30
+    capture_interval: float = 20.0
 
 
 def load_agent_config() -> AgentConfig:
@@ -41,6 +42,9 @@ def load_agent_config() -> AgentConfig:
     log_interval = float(os.getenv("SCREEN_TIMER_LOG_INTERVAL", "5"))
     sample_interval = float(os.getenv("SCREEN_TIMER_SAMPLE_INTERVAL", "10"))
     queue_size = int(os.getenv("SCREEN_TIMER_QUEUE_SIZE", "16"))
+    capture_interval = float(
+        os.getenv("SCREEN_TIMER_CAPTURE_INTERVAL", str(AgentConfig.capture_interval))
+    )
     vlm_model = os.getenv("SCREEN_TIMER_VLM_MODEL")
     prompt = os.getenv("SCREEN_TIMER_VLM_PROMPT")
     log_path_env = os.getenv("SCREEN_TIMER_LOG_PATH")
@@ -69,4 +73,5 @@ def load_agent_config() -> AgentConfig:
         log_path=log_path,
         workday_cutoff=workday_cutoff,
         violation_grace_seconds=violation_grace,
+        capture_interval=capture_interval,
     )

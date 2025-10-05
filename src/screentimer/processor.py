@@ -8,10 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional
 
-from screentimer.media import sample_buffer_to_png
-from screentimer.streaming import CapturedFrame
-from screentimer.vlm import VLMClient
 from screentimer.policy import PolicyManager
+from screentimer.vlm import VLMClient
 
 
 @dataclass
@@ -24,8 +22,18 @@ class ProcessorOptions:
     policy_manager: Optional[PolicyManager] = None
 
 
+@dataclass(frozen=True)
+class CapturedImage:
+    """Structure passed from the capture manager into the processor."""
+
+    display_id: int
+    png_bytes: bytes
+    timestamp: float
+    enqueued_monotonic: float
+
+
 class FrameProcessor:
-    """Consumes captured frames and performs logging / inference."""
+    """Consumes captured screenshots and performs logging / inference."""
 
     def __init__(self, options: ProcessorOptions) -> None:
         self._options = options
@@ -33,7 +41,7 @@ class FrameProcessor:
         self._stats_lock = threading.Lock()
         self._last_log = time.monotonic()
         self._last_sample: Dict[int, float] = {}
-        self._task_queue: queue.Queue[CapturedFrame] = queue.Queue(
+        self._task_queue: queue.Queue[CapturedImage] = queue.Queue(
             maxsize=options.queue_size
         )
         self._stop_event = threading.Event()
@@ -42,8 +50,8 @@ class FrameProcessor:
         )
         self._worker.start()
 
-    def handle_frame(self, frame: CapturedFrame) -> None:
-        """Entry point passed to `ScreenCaptureManager`."""
+    def handle_frame(self, frame: CapturedImage) -> None:
+        """Entry point passed to the capture manager."""
 
         self._record_stats(frame)
 
@@ -81,7 +89,7 @@ class FrameProcessor:
 
     # Internal helpers -------------------------------------------------
 
-    def _record_stats(self, frame: CapturedFrame) -> None:
+    def _record_stats(self, frame: CapturedImage) -> None:
         with self._stats_lock:
             self._stats[frame.display_id] = self._stats.get(frame.display_id, 0) + 1
             now = time.monotonic()
@@ -108,26 +116,22 @@ class FrameProcessor:
             finally:
                 self._task_queue.task_done()
 
-    def _process_sample(self, frame: CapturedFrame) -> None:
+    def _process_sample(self, frame: CapturedImage) -> None:
         processing_started = time.monotonic()
-        queue_delay = processing_started - getattr(frame, "received_monotonic", processing_started)
+        queue_delay = processing_started - frame.enqueued_monotonic
         logging.debug(
             "FrameProcessor: display %s queue delay %.3fs",
             frame.display_id,
             queue_delay,
         )
 
-        png_bytes = sample_buffer_to_png(frame.sample_buffer)
-        if not png_bytes:
-            return
-
         capture_dir = self._options.capture_dir
         if capture_dir is not None:
-            self._save_thumbnail(capture_dir, frame, png_bytes)
+            self._save_thumbnail(capture_dir, frame)
 
         if self._options.vlm_client.enabled:
             vlm_started = time.monotonic()
-            result = self._options.vlm_client.classify(png_bytes)
+            result = self._options.vlm_client.classify(frame.png_bytes)
             vlm_duration = time.monotonic() - vlm_started
             logging.debug(
                 "FrameProcessor: display %s VLM latency %.3fs",
@@ -143,11 +147,11 @@ class FrameProcessor:
                         timestamp=frame.timestamp,
                     )
 
-    def _save_thumbnail(self, capture_dir: Path, frame: CapturedFrame, png_bytes: bytes) -> None:
+    def _save_thumbnail(self, capture_dir: Path, frame: CapturedImage) -> None:
         timestamp_ms = int(frame.timestamp * 1000)
         filename = f"display-{frame.display_id}-{timestamp_ms}.png"
         path = capture_dir / filename
         try:
-            path.write_bytes(png_bytes)
+            path.write_bytes(frame.png_bytes)
         except Exception:  # pragma: no cover
             logging.exception("Failed to write frame thumbnail to %s", path)

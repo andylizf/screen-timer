@@ -14,17 +14,18 @@ from typing import Optional, Sequence
 from screentimer.config import load_agent_config
 from screentimer.policy import PolicyConfig, PolicyManager
 from screentimer.processor import FrameProcessor, ProcessorOptions
-from screentimer.streaming import ScreenCaptureManager
+from screentimer.screenshot import ScreenshotCaptureManager
+from screentimer.permissions import ensure_screen_recording_permission
 from screentimer.vlm import VLMClient
 
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the screen capture agent")
     parser.add_argument(
-        "--frame-interval",
+        "--capture-interval",
         type=float,
-        default=0.5,
-        help="Minimum frame interval in seconds per display (default: 0.5)",
+        default=20.0,
+        help="Screenshot interval in seconds per display (default: 20)",
     )
     parser.add_argument(
         "--log-level",
@@ -106,10 +107,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
     )
 
-    manager = ScreenCaptureManager(
+    capture_interval = (
+        args.capture_interval
+        if args.capture_interval is not None
+        else config.capture_interval
+    )
+
+    manager = ScreenshotCaptureManager(
         processor.handle_frame,
-        minimum_frame_interval=args.frame_interval,
-        idle_callback=processor.handle_stream_idle,
+        capture_interval=capture_interval,
     )
 
     stop_event = threading.Event()
@@ -121,9 +127,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
 
+    if not ensure_screen_recording_permission(prompt=True):
+        logging.error("Screen recording permission denied by the user")
+        processor.shutdown()
+        return 1
+
     try:
         manager.start()
-    except PermissionError as exc:
+    except RuntimeError as exc:
         logging.error("%s", exc)
         processor.shutdown()
         return 1
