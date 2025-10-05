@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: screen-timer
+Version: 0.1.0
+Summary: Screen activity monitoring agent for macOS
+Author: Andy
+Requires-Python: >=3.9
+Requires-Dist: pyobjc-core>=10.0
+Requires-Dist: pyobjc-framework-cocoa>=11.1
+Requires-Dist: pyobjc-framework-quartz>=10.0
+Requires-Dist: pyobjc-framework-coremedia>=10.0
+Requires-Dist: pyobjc-framework-screencapturekit>=10.0
+Requires-Dist: python-dotenv>=1.0.1
+Requires-Dist: Pillow>=10.4.0
+Requires-Dist: litellm>=1.42.0

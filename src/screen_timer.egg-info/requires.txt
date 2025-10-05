@@ -1,0 +1,8 @@
+pyobjc-core>=10.0
+pyobjc-framework-cocoa>=11.1
+pyobjc-framework-quartz>=10.0
+pyobjc-framework-coremedia>=10.0
+pyobjc-framework-screencapturekit>=10.0
+python-dotenv>=1.0.1
+Pillow>=10.4.0
+litellm>=1.42.0

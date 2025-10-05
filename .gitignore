@@ -1,0 +1,18 @@
+# Virtual envs
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Project artifacts
+logs/
+captured/
+
+# Environment/config
+.env
+cgrequestscreencaptureaccess.json
+screencapturekit.json
+
+# macOS
+.DS_Store

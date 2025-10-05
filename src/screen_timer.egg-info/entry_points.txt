@@ -1,0 +1,2 @@
+[console_scripts]
+screen-timer-agent = screentimer.agent:main

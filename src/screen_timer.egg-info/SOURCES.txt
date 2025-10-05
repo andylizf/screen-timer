@@ -1,0 +1,16 @@
+README.md
+pyproject.toml
+src/screen_timer.egg-info/PKG-INFO
+src/screen_timer.egg-info/SOURCES.txt
+src/screen_timer.egg-info/dependency_links.txt
+src/screen_timer.egg-info/entry_points.txt
+src/screen_timer.egg-info/requires.txt
+src/screen_timer.egg-info/top_level.txt
+src/screentimer/__init__.py
+src/screentimer/agent.py
+src/screentimer/config.py
+src/screentimer/media.py
+src/screentimer/permissions.py
+src/screentimer/processor.py
+src/screentimer/streaming.py
+src/screentimer/vlm.py

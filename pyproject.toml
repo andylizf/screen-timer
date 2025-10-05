@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "screen-timer"
+version = "0.1.0"
+description = "Screen activity monitoring agent for macOS"
+authors = [{ name = "Andy" }]
+requires-python = ">=3.9"
+dependencies = [
+  "pyobjc-core>=10.0",
+  "pyobjc-framework-cocoa>=11.1",
+  "pyobjc-framework-quartz>=10.0",
+  "pyobjc-framework-coremedia>=10.0",
+  "pyobjc-framework-screencapturekit>=10.0",
+  "python-dotenv>=1.0.1",
+  "Pillow>=10.4.0",
+  "litellm>=1.42.0",
+]
+
+[project.scripts]
+screen-timer-agent = "screentimer.agent:main"
