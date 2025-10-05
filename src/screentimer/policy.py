@@ -137,12 +137,14 @@ class PolicyManager:
                     f"Display {display_id}",
                     "-message",
                     message,
+                    "-sound",
+                    "Funk",
                 ]
                 subprocess.run(cmd, check=True)
             else:
                 script = (
                     f'display notification "{message}" with title "{self._config.notification_title}" '
-                    f'subtitle "Display {display_id}"'
+                    f'subtitle "Display {display_id}" sound name "Funk"'
                 )
                 subprocess.run(["osascript", "-e", script], check=True)
         except subprocess.CalledProcessError as exc:  # pragma: no cover

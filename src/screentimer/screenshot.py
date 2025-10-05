@@ -5,13 +5,12 @@ import threading
 import time
 from typing import Callable, Dict, List, Optional
 
+from AppKit import NSScreen  # type: ignore
 from Quartz import (  # type: ignore
     CGDisplayCreateImage,
-    CGGetActiveDisplayList,
     CGImageDestinationAddImage,
     CGImageDestinationCreateWithData,
     CGImageDestinationFinalize,
-    kCGErrorSuccess,
 )
 from CoreFoundation import (  # type: ignore
     CFDataCreateMutable,
@@ -73,10 +72,16 @@ class ScreenshotCaptureManager:
     # Internal helpers -------------------------------------------------
 
     def _enumerate_displays(self) -> List[int]:
-        result, display_list, _ = CGGetActiveDisplayList(0, None, None)
-        if result != kCGErrorSuccess:
-            raise RuntimeError(f"Failed to enumerate displays: {result}")
-        return list(display_list)
+        screens = NSScreen.screens()
+        display_ids: List[int] = []
+        for screen in screens or []:
+            desc = screen.deviceDescription()
+            display_number = desc.get("NSScreenNumber") if desc is not None else None
+            if display_number is not None:
+                display_ids.append(int(display_number))
+        if not display_ids:
+            raise RuntimeError("No NSScreen instances found")
+        return display_ids
 
     def _capture_loop(self, display_id: int) -> None:
         while not self._stop_event.is_set():
@@ -106,22 +111,18 @@ class ScreenshotCaptureManager:
             logging.warning("ScreenshotCaptureManager: failed to capture display %s", display_id)
             return None
 
-        try:
-            data = CFDataCreateMutable(None, 0)
-            destination = CGImageDestinationCreateWithData(data, "public.png", 1, None)
-            if destination is None:
-                logging.error("ScreenshotCaptureManager: failed to create image destination")
-                CFRelease(data)
-                return None
-            CGImageDestinationAddImage(destination, image, None)
-            if not CGImageDestinationFinalize(destination):
-                logging.error("ScreenshotCaptureManager: failed to finalize PNG for display %s", display_id)
-                CFRelease(destination)
-                CFRelease(data)
-                return None
-            png_bytes = bytes(data)
-            CFRelease(destination)
-            CFRelease(data)
-            return png_bytes
-        finally:
-            CFRelease(image)
+        data = CFDataCreateMutable(None, 0)
+        destination = CGImageDestinationCreateWithData(data, "public.png", 1, None)
+        if destination is None:
+            logging.error("ScreenshotCaptureManager: failed to create image destination")
+            return None
+
+        CGImageDestinationAddImage(destination, image, None)
+        if not CGImageDestinationFinalize(destination):
+            logging.error(
+                "ScreenshotCaptureManager: failed to finalize PNG for display %s",
+                display_id,
+            )
+            return None
+
+        return bytes(data)
