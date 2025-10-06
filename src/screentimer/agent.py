@@ -94,6 +94,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         PolicyConfig(
             workday_cutoff=config.workday_cutoff,
             violation_grace=timedelta(seconds=config.violation_grace_seconds),
+            reminder_interval=timedelta(seconds=config.reminder_interval_seconds),
+            violation_capture_interval=config.violation_capture_interval,
         )
     )
     processor = FrameProcessor(
@@ -117,6 +119,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         processor.handle_frame,
         capture_interval=capture_interval,
     )
+    policy_manager.set_capture_controller(manager)
 
     stop_event = threading.Event()
 

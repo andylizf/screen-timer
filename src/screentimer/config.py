@@ -29,6 +29,8 @@ class AgentConfig:
     workday_cutoff: time = time(17, 0)
     violation_grace_seconds: int = 30
     capture_interval: float = 20.0
+    violation_capture_interval: Optional[float] = 5.0
+    reminder_interval_seconds: int = 10
 
 
 def load_agent_config() -> AgentConfig:
@@ -44,6 +46,14 @@ def load_agent_config() -> AgentConfig:
     queue_size = int(os.getenv("SCREEN_TIMER_QUEUE_SIZE", "16"))
     capture_interval = float(
         os.getenv("SCREEN_TIMER_CAPTURE_INTERVAL", str(AgentConfig.capture_interval))
+    )
+    violation_capture_interval_env = os.getenv("SCREEN_TIMER_VIOLATION_CAPTURE_INTERVAL")
+    if violation_capture_interval_env is not None and violation_capture_interval_env.strip():
+        violation_capture_interval = float(violation_capture_interval_env)
+    else:
+        violation_capture_interval = AgentConfig.violation_capture_interval
+    reminder_interval_seconds = int(
+        os.getenv("SCREEN_TIMER_REMINDER_INTERVAL", str(AgentConfig.reminder_interval_seconds))
     )
     vlm_model = os.getenv("SCREEN_TIMER_VLM_MODEL")
     prompt = os.getenv("SCREEN_TIMER_VLM_PROMPT")
@@ -74,4 +84,6 @@ def load_agent_config() -> AgentConfig:
         workday_cutoff=workday_cutoff,
         violation_grace_seconds=violation_grace,
         capture_interval=capture_interval,
+        violation_capture_interval=violation_capture_interval,
+        reminder_interval_seconds=reminder_interval_seconds,
     )

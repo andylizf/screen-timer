@@ -33,6 +33,8 @@ SCREEN_TIMER_VLM_PROMPT=Classify whether this macOS screenshot is entertainment 
 SCREEN_TIMER_LOG_PATH=./logs/screen-timer.log
 SCREEN_TIMER_WORKDAY_CUTOFF=17:00
 SCREEN_TIMER_VIOLATION_GRACE=30
+SCREEN_TIMER_VIOLATION_CAPTURE_INTERVAL=5
+SCREEN_TIMER_REMINDER_INTERVAL=5
 ```
 - Omit `SCREEN_TIMER_CAPTURE_DIR` to disable thumbnail export.
 - Omit `SCREEN_TIMER_VLM_MODEL` to run without VLM inference.
@@ -40,6 +42,9 @@ SCREEN_TIMER_VIOLATION_GRACE=30
 - `SCREEN_TIMER_WORKDAY_CUTOFF` sets the latest time (local) when entertainment is still blocked; default 17:00.
 - `SCREEN_TIMER_VIOLATION_GRACE` defines how many seconds of persistent entertainment trigger a lock (default 30 seconds).
 - `SCREEN_TIMER_CAPTURE_INTERVAL` sets the screenshot cadence in seconds (default 20).
+- `SCREEN_TIMER_VIOLATION_CAPTURE_INTERVAL` tightens the screenshot cadence while a violation is active (default 5; leave blank to disable tightening).
+- `SCREEN_TIMER_REMINDER_INTERVAL` controls how frequently repeat notifications fire during a violation (seconds, default 10).
+- `SCREEN_TIMER_REMINDER_INTERVAL` controls how frequently repeat notifications fire during a violation (seconds, default 10).
 
 ## Running the capture agent
 ```bash
@@ -48,6 +53,7 @@ uv run screen-timer-agent --log-file ~/screen-timer.log  # override log path
 ```
 - The first launch triggers a macOS prompt via `CGRequestScreenCaptureAccess()`.
 - The agent logs per-display capture counts, writes sampled PNG thumbnails (if a capture directory is configured), and sends the same screenshots to the configured VLM through `litellm`.
+- Once "entertainment" is detected, the screenshot cadence tightens to `SCREEN_TIMER_VIOLATION_CAPTURE_INTERVAL` until the display returns to "work", yielding quicker reminders.
 - During work hours (before the cutoff), sustained "entertainment" classifications trigger macOS notifications; if the user does not stop within the grace period the agent issues Control+Command+Q to lock the screen.
 - Use `Ctrl+C` to stop; the agent gracefully shuts down all streams and worker threads.
 

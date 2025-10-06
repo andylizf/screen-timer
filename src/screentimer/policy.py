@@ -8,7 +8,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Protocol
 
 _JSON_BLOCK_RE = re.compile(r"```json\s*(.*?)\s*```", re.DOTALL)
 
@@ -23,6 +23,16 @@ class PolicyConfig:
         "-e",
         'tell application "System Events" to keystroke "q" using {control down, command down}',
     )
+    reminder_interval: timedelta = timedelta(seconds=10)
+    violation_capture_interval: Optional[float] = None
+
+
+class CaptureController(Protocol):
+    def tighten_interval(self, display_id: int, interval: float) -> None:
+        ...
+
+    def restore_interval(self, display_id: int) -> None:
+        ...
 
 
 @dataclass
@@ -40,6 +50,11 @@ class PolicyManager:
         self._violations: Dict[int, _ViolationState] = {}
         self._last_label: Dict[int, Tuple[str, float]] = {}
         self._use_terminal_notifier = shutil.which("terminal-notifier") is not None
+        self._capture_controller: Optional[CaptureController] = None
+        self._interval_tightened: Dict[int, bool] = {}
+
+    def set_capture_controller(self, controller: CaptureController) -> None:
+        self._capture_controller = controller
 
     def handle_frame_result(self, display_id: int, result_text: str, *, timestamp: float) -> None:
         parsed = _parse_result(result_text)
@@ -57,6 +72,7 @@ class PolicyManager:
             if display_id in self._violations:
                 logging.info("PolicyManager: resetting violation for display %s", display_id)
                 self._violations.pop(display_id, None)
+                self._restore_interval(display_id)
             self._last_label.pop(display_id, None)
             return
 
@@ -69,6 +85,7 @@ class PolicyManager:
             )
             self._send_notification(display_id, "Entertainment detected; please return to work")
             self._violations[display_id] = _ViolationState(first_detected=now, last_notified=now, notified=True)
+            self._tighten_interval(display_id)
             return
 
         elapsed = now - state.first_detected
@@ -80,7 +97,8 @@ class PolicyManager:
             )
             self._lock_screen()
             self._violations.pop(display_id, None)
-        elif (now - state.last_notified) >= timedelta(seconds=10):
+            self._restore_interval(display_id)
+        elif (now - state.last_notified) >= self._config.reminder_interval:
             # Remind periodically
             logging.info(
                 "PolicyManager: repeated entertainment on display %s; sending reminder",
@@ -115,9 +133,10 @@ class PolicyManager:
             )
             self._lock_screen()
             self._violations.pop(display_id, None)
+            self._restore_interval(display_id)
             return
 
-        if (now - state.last_notified) >= timedelta(seconds=10):
+        if (now - state.last_notified) >= self._config.reminder_interval:
             self._send_notification(
                 display_id,
                 f"Entertainment still detected (idle {idle_seconds:.0f}s); lock after {int(self._config.violation_grace.total_seconds() - elapsed.total_seconds())}s",
@@ -159,6 +178,26 @@ class PolicyManager:
             logging.error("Lock command failed: %s", exc)
         except FileNotFoundError:  # pragma: no cover
             logging.error("Lock command not found: %s", self._config.lock_cmd)
+
+    def _tighten_interval(self, display_id: int) -> None:
+        if (
+            self._capture_controller is None
+            or self._config.violation_capture_interval is None
+            or self._interval_tightened.get(display_id)
+        ):
+            return
+        self._capture_controller.tighten_interval(
+            display_id, self._config.violation_capture_interval
+        )
+        self._interval_tightened[display_id] = True
+
+    def _restore_interval(self, display_id: int) -> None:
+        if self._capture_controller is None:
+            self._interval_tightened.pop(display_id, None)
+            return
+        if not self._interval_tightened.pop(display_id, None):
+            return
+        self._capture_controller.restore_interval(display_id)
 
 
 # ----------------------------------------------------------------------
