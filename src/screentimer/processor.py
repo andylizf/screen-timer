@@ -66,9 +66,22 @@ class FrameProcessor:
         try:
             self._task_queue.put_nowait(frame)
         except queue.Full:  # pragma: no cover
-            logging.warning(
-                "Frame queue full; dropping frame for display %s", frame.display_id
-            )
+            try:
+                dropped = self._task_queue.get_nowait()
+                logging.debug(
+                    "Frame queue full; dropped oldest frame for display %s",
+                    dropped.display_id,
+                )
+            except queue.Empty:  # pragma: no cover
+                dropped = None
+
+            try:
+                self._task_queue.put_nowait(frame)
+            except queue.Full:  # pragma: no cover
+                logging.warning(
+                    "Frame queue full; dropping newest frame for display %s",
+                    frame.display_id,
+                )
 
     def shutdown(self) -> None:
         """Stop background workers and flush queues."""
