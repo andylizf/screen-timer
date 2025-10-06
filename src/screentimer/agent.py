@@ -24,8 +24,8 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument(
         "--capture-interval",
         type=float,
-        default=20.0,
-        help="Screenshot interval in seconds per display (default: 20)",
+        default=30.0,
+        help="Screenshot interval in seconds per display (default: 30)",
     )
     parser.add_argument(
         "--log-level",

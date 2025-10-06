@@ -49,6 +49,7 @@ class FrameProcessor:
             target=self._worker_loop, name="frame-processor", daemon=True
         )
         self._worker.start()
+        self._queue_warning_emitted = False
 
     def handle_frame(self, frame: CapturedImage) -> None:
         """Entry point passed to the capture manager."""
@@ -63,8 +64,10 @@ class FrameProcessor:
             return
 
         self._last_sample[frame.display_id] = frame.timestamp
+        inserted = False
         try:
             self._task_queue.put_nowait(frame)
+            inserted = True
         except queue.Full:  # pragma: no cover
             try:
                 dropped = self._task_queue.get_nowait()
@@ -77,11 +80,33 @@ class FrameProcessor:
 
             try:
                 self._task_queue.put_nowait(frame)
+                inserted = True
             except queue.Full:  # pragma: no cover
                 logging.warning(
                     "Frame queue full; dropping newest frame for display %s",
                     frame.display_id,
                 )
+        if inserted:
+            self._check_queue_pressure()
+
+    def _check_queue_pressure(self) -> None:
+        maxsize = self._task_queue.maxsize
+        if maxsize <= 0:
+            return
+        size = self._task_queue.qsize()
+        threshold = max(1, int(maxsize * 0.8))
+        if size >= threshold:
+            if not self._queue_warning_emitted:
+                percent = int((size / maxsize) * 100)
+                logging.warning(
+                    "Frame queue at %s/%s (~%s%%); consider increasing capture/sample interval or queue size",
+                    size,
+                    maxsize,
+                    percent,
+                )
+                self._queue_warning_emitted = True
+        else:
+            self._queue_warning_emitted = False
 
     def shutdown(self) -> None:
         """Stop background workers and flush queues."""

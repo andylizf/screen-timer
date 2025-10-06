@@ -19,7 +19,7 @@ class AgentConfig:
     sample_interval: float = 10.0
     capture_dir: Optional[Path] = None
     queue_size: int = 16
-    vlm_model: Optional[str] = None
+    vlm_model: Optional[str] = "gpt-4o-mini"
     vlm_prompt: str = (
         "Classify whether the captured macOS screen content shows entertainment or work. "
         'Respond with a short JSON object like {"label": "entertainment", "confidence": 0.8} and '
@@ -28,7 +28,7 @@ class AgentConfig:
     log_path: Path = Path("logs/screen-timer.log")
     workday_cutoff: time = time(17, 0)
     violation_grace_seconds: int = 30
-    capture_interval: float = 20.0
+    capture_interval: float = 30.0
     violation_capture_interval: Optional[float] = 5.0
     reminder_interval_seconds: int = 10
 
@@ -78,7 +78,7 @@ def load_agent_config() -> AgentConfig:
         sample_interval=sample_interval,
         capture_dir=capture_dir,
         queue_size=queue_size,
-        vlm_model=vlm_model,
+        vlm_model=vlm_model or AgentConfig.vlm_model,
         vlm_prompt=prompt or AgentConfig.vlm_prompt,
         log_path=log_path,
         workday_cutoff=workday_cutoff,

@@ -37,7 +37,7 @@ class VLMClient:
                             {"type": "text", "text": self._prompt},
                             {
                                 "type": "image_url",
-                                "image_url": {"url": image_data_url},
+                                "image_url": {"url": image_data_url, "detail": "low"},
                             },
                         ],
                     }

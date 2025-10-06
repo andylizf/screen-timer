@@ -26,9 +26,9 @@ Create `.env` in the project root (values are examples):
 OPENAI_API_KEY=sk-...
 SCREEN_TIMER_CAPTURE_DIR=./captures
 SCREEN_TIMER_SAMPLE_INTERVAL=10
-SCREEN_TIMER_CAPTURE_INTERVAL=20
+SCREEN_TIMER_CAPTURE_INTERVAL=30
 SCREEN_TIMER_LOG_INTERVAL=5
-SCREEN_TIMER_VLM_MODEL=gpt-4o
+SCREEN_TIMER_VLM_MODEL=gpt-4o-mini
 SCREEN_TIMER_VLM_PROMPT=Classify whether this macOS screenshot is entertainment or work; respond with JSON.
 SCREEN_TIMER_LOG_PATH=./logs/screen-timer.log
 SCREEN_TIMER_WORKDAY_CUTOFF=17:00
@@ -41,14 +41,16 @@ SCREEN_TIMER_REMINDER_INTERVAL=5
 - `SCREEN_TIMER_LOG_PATH` controls where logs are persisted (defaults to `logs/screen-timer.log`).
 - `SCREEN_TIMER_WORKDAY_CUTOFF` sets the latest time (local) when entertainment is still blocked; default 17:00.
 - `SCREEN_TIMER_VIOLATION_GRACE` defines how many seconds of persistent entertainment trigger a lock (default 30 seconds).
-- `SCREEN_TIMER_CAPTURE_INTERVAL` sets the screenshot cadence in seconds (default 20).
+- `SCREEN_TIMER_CAPTURE_INTERVAL` sets the screenshot cadence in seconds (default 30).
 - `SCREEN_TIMER_VIOLATION_CAPTURE_INTERVAL` tightens the screenshot cadence while a violation is active (default 5; leave blank to disable tightening).
 - `SCREEN_TIMER_REMINDER_INTERVAL` controls how frequently repeat notifications fire during a violation (seconds, default 10).
+- `SCREEN_TIMER_VLM_MODEL` defaults to `gpt-4o-mini`; override if you need a different model.
+- Vision requests are sent with `detail="low"` to reduce cost—raise only when you need higher fidelity.
 - `SCREEN_TIMER_REMINDER_INTERVAL` controls how frequently repeat notifications fire during a violation (seconds, default 10).
 
 ## Running the capture agent
 ```bash
-uv run screen-timer-agent --capture-interval 20 --log-level DEBUG --console-level INFO
+uv run screen-timer-agent --capture-interval 30 --log-level DEBUG --console-level INFO
 uv run screen-timer-agent --log-file ~/screen-timer.log  # override log path
 ```
 - The first launch triggers a macOS prompt via `CGRequestScreenCaptureAccess()`.
