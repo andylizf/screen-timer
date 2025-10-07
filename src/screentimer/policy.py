@@ -25,6 +25,8 @@ class PolicyConfig:
     )
     reminder_interval: timedelta = timedelta(seconds=10)
     violation_capture_interval: Optional[float] = None
+    off_hours_start: time = time(17, 0)
+    off_hours_grace: timedelta = timedelta(minutes=5)
 
 
 class CaptureController(Protocol):
@@ -68,12 +70,26 @@ class PolicyManager:
 
         self._last_label[display_id] = (label, confidence)
 
-        if label != "entertainment" or confidence < 0.6 or not _within_work_hours(now, self._config.workday_cutoff):
+        if label != "entertainment" or confidence < 0.6:
             if display_id in self._violations:
                 logging.info("PolicyManager: resetting violation for display %s", display_id)
                 self._violations.pop(display_id, None)
                 self._restore_interval(display_id)
             self._last_label.pop(display_id, None)
+            return
+
+        if self._within_off_hours_grace(now):
+            if display_id in self._violations:
+                logging.info(
+                    "PolicyManager: clearing violation for display %s due to off-hours grace",
+                    display_id,
+                )
+                self._violations.pop(display_id, None)
+                self._restore_interval(display_id)
+            logging.info(
+                "PolicyManager: entertainment on display %s within off-hours grace window; skipping enforcement",
+                display_id,
+            )
             return
 
         state = self._violations.get(display_id)
@@ -113,6 +129,15 @@ class PolicyManager:
         now = datetime.now()
         state = self._violations.get(display_id)
         if state is None:
+            return
+
+        if self._within_off_hours_grace(now):
+            logging.info(
+                "PolicyManager: ignoring idle entertainment on display %s during off-hours grace",
+                display_id,
+            )
+            self._violations.pop(display_id, None)
+            self._restore_interval(display_id)
             return
 
         label_info = self._last_label.get(display_id)
@@ -199,6 +224,13 @@ class PolicyManager:
             return
         self._capture_controller.restore_interval(display_id)
 
+    def _within_off_hours_grace(self, now: datetime) -> bool:
+        start = self._config.off_hours_start
+        if now.time() < start:
+            return False
+        start_dt = datetime.combine(now.date(), start)
+        return now - start_dt <= self._config.off_hours_grace
+
 
 # ----------------------------------------------------------------------
 
@@ -232,8 +264,3 @@ def _parse_result(text: str) -> Optional[dict]:
     except json.JSONDecodeError:
         logging.debug("PolicyManager: failed to parse JSON from result: %s", candidate)
         return None
-
-
-def _within_work_hours(now: datetime, cutoff: time) -> bool:
-    current_time = now.time()
-    return current_time < cutoff

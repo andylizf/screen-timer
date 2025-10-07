@@ -26,11 +26,13 @@ class AgentConfig:
         "include a brief reason."
     )
     log_path: Path = Path("logs/screen-timer.log")
-    workday_cutoff: time = time(17, 0)
+    workday_cutoff: time = time(23, 59)
     violation_grace_seconds: int = 30
     capture_interval: float = 30.0
     violation_capture_interval: Optional[float] = 5.0
     reminder_interval_seconds: int = 10
+    off_hours_start: time = time(17, 0)
+    off_hours_grace_minutes: int = 5
 
 
 def load_agent_config() -> AgentConfig:
@@ -73,6 +75,20 @@ def load_agent_config() -> AgentConfig:
 
     violation_grace = int(os.getenv("SCREEN_TIMER_VIOLATION_GRACE", str(AgentConfig.violation_grace_seconds)))
 
+    off_hours_start_env = os.getenv("SCREEN_TIMER_OFF_HOURS_START")
+    if off_hours_start_env:
+        hours, minutes = off_hours_start_env.split(":") if ":" in off_hours_start_env else (off_hours_start_env, "0")
+        off_hours_start = time(int(hours), int(minutes))
+    else:
+        off_hours_start = AgentConfig.off_hours_start
+
+    off_hours_grace_minutes = int(
+        os.getenv(
+            "SCREEN_TIMER_OFF_HOURS_GRACE_MINUTES",
+            str(AgentConfig.off_hours_grace_minutes),
+        )
+    )
+
     return AgentConfig(
         log_interval=log_interval,
         sample_interval=sample_interval,
@@ -86,4 +102,6 @@ def load_agent_config() -> AgentConfig:
         capture_interval=capture_interval,
         violation_capture_interval=violation_capture_interval,
         reminder_interval_seconds=reminder_interval_seconds,
+        off_hours_start=off_hours_start,
+        off_hours_grace_minutes=off_hours_grace_minutes,
     )

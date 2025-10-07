@@ -96,6 +96,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             violation_grace=timedelta(seconds=config.violation_grace_seconds),
             reminder_interval=timedelta(seconds=config.reminder_interval_seconds),
             violation_capture_interval=config.violation_capture_interval,
+            off_hours_start=config.off_hours_start,
+            off_hours_grace=timedelta(minutes=config.off_hours_grace_minutes),
         )
     )
     processor = FrameProcessor(

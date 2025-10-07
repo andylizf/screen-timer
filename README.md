@@ -31,19 +31,23 @@ SCREEN_TIMER_LOG_INTERVAL=5
 SCREEN_TIMER_VLM_MODEL=gpt-4o-mini
 SCREEN_TIMER_VLM_PROMPT=Classify whether this macOS screenshot is entertainment or work; respond with JSON.
 SCREEN_TIMER_LOG_PATH=./logs/screen-timer.log
-SCREEN_TIMER_WORKDAY_CUTOFF=17:00
+SCREEN_TIMER_WORKDAY_CUTOFF=23:59
 SCREEN_TIMER_VIOLATION_GRACE=30
 SCREEN_TIMER_VIOLATION_CAPTURE_INTERVAL=5
 SCREEN_TIMER_REMINDER_INTERVAL=5
+SCREEN_TIMER_OFF_HOURS_START=17:00
+SCREEN_TIMER_OFF_HOURS_GRACE_MINUTES=5
 ```
 - Omit `SCREEN_TIMER_CAPTURE_DIR` to disable thumbnail export.
 - Omit `SCREEN_TIMER_VLM_MODEL` to run without VLM inference.
 - `SCREEN_TIMER_LOG_PATH` controls where logs are persisted (defaults to `logs/screen-timer.log`).
-- `SCREEN_TIMER_WORKDAY_CUTOFF` sets the latest time (local) when entertainment is still blocked; default 17:00.
+- `SCREEN_TIMER_WORKDAY_CUTOFF` defaults to 23:59 so monitoring never automatically stops.
 - `SCREEN_TIMER_VIOLATION_GRACE` defines how many seconds of persistent entertainment trigger a lock (default 30 seconds).
 - `SCREEN_TIMER_CAPTURE_INTERVAL` sets the screenshot cadence in seconds (default 30).
 - `SCREEN_TIMER_VIOLATION_CAPTURE_INTERVAL` tightens the screenshot cadence while a violation is active (default 5; leave blank to disable tightening).
 - `SCREEN_TIMER_REMINDER_INTERVAL` controls how frequently repeat notifications fire during a violation (seconds, default 10).
+- `SCREEN_TIMER_OFF_HOURS_START` marks when the evening grace window begins (default 17:00).
+- `SCREEN_TIMER_OFF_HOURS_GRACE_MINUTES` lets the user watch entertainment after the off-hours start for the specified minutes (default 5) before enforcement resumes.
 - `SCREEN_TIMER_VLM_MODEL` defaults to `gpt-4o-mini`; override if you need a different model.
 - Vision requests are sent with `detail="low"` to reduce cost—raise only when you need higher fidelity.
 - `SCREEN_TIMER_REMINDER_INTERVAL` controls how frequently repeat notifications fire during a violation (seconds, default 10).
